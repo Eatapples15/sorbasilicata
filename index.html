@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sala Operativa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Imposta il font Inter per tutto il corpo del documento */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Sfondo grigio chiaro */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Assicura che la pagina occupi almeno l'intera altezza del viewport */
+        }
+        /* Stili personalizzati per il logo e il titolo */
+        .header-container {
+            background-color: #ffffff; /* Sfondo bianco per l'header */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Ombra leggera */
+        }
+        .logo {
+            max-height: 64px; /* Altezza massima del logo */
+            width: auto;
+        }
+        .button-grid {
+            display: grid;
+            gap: 1.5rem; /* Spazio tra i pulsanti */
+            grid-template-columns: repeat(1, minmax(0, 1fr)); /* 1 colonna per mobile */
+        }
+        @media (min-width: 640px) { /* sm breakpoint */
+            .button-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 colonne per tablet */
+            }
+        }
+        @media (min-width: 1024px) { /* lg breakpoint */
+            .button-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3 colonne per desktop */
+            }
+        }
+        .button-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            background-color: #4f46e5; /* Blu indaco */
+            color: white;
+            font-weight: 600; /* Semi-grassetto */
+            border-radius: 0.75rem; /* Bordi arrotondati */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Ombra */
+            transition: transform 0.2s, box-shadow 0.2s; /* Transizione per hover */
+            text-decoration: none; /* Rimuove la sottolineatura dai link */
+            text-align: center;
+            height: 120px; /* Altezza fissa per i pulsanti */
+        }
+        .button-link:hover {
+            transform: translateY(-3px); /* Leggero sollevamento all'hover */
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15); /* Ombra più pronunciata all'hover */
+            background-color: #4338ca; /* Blu indaco più scuro all'hover */
+        }
+        .button-link span {
+            margin-top: 0.5rem;
+            font-size: 1.125rem; /* Testo più grande */
+        }
+        .section-title {
+            font-size: 1.5rem; /* Dimensione del titolo di sezione */
+            font-weight: 700; /* Grassetto */
+            color: #1f2937; /* Grigio scuro */
+            margin-bottom: 1.5rem; /* Spazio sotto il titolo */
+            text-align: center;
+        }
+        .section-container {
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem; /* Spazio tra le sezioni */
+        }
+    </style>
+</head>
+<body>
+    <header class="header-container py-4 md:py-6 px-4 md:px-8 flex flex-col sm:flex-row items-center justify-center sm:justify-between w-full">
+        <div class="flex items-center mb-4 sm:mb-0">
+            <img src="Logo.png" alt="Logo Sala Operativa" class="logo mr-4 rounded-lg">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Sala Operativa</h1>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto p-4 md:p-8">
+        <div class="section-container">
+            <h2 class="section-title">Gestione</h2>
+            <div class="button-grid">
+                <a href="https://eatapples15.github.io/salaoperativa/templates/dashboard_operatore.html" target="_blank" class="button-link">
+                    <span>Gestione Bollettini</span>
+                </a>
+                <a href="https://eatapples15.github.io/proceduresor/" target="_blank" class="button-link">
+                    <span>Procedure</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="section-container">
+            <h2 class="section-title">Mappa</h2>
+            <div class="button-grid">
+                <a href="https://eatapples15.github.io/basilicata/" target="_blank" class="button-link">
+                    <span>Gestisci Mappa</span>
+                </a>
+                <a href="https://eatapples15.github.io/basilicata/visualizza.html" target="_blank" class="button-link">
+                    <span>Visualizza Mappa</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="section-container">
+            <h2 class="section-title">Risorse</h2>
+            <div class="button-grid">
+                <a href="https://eatapples15.github.io/acqua/" target="_blank" class="button-link">
+                    <span>Risorse Idriche</span>
+                </a>
+                <a href="https://idranti-basilicata-870e1.web.app/" target="_blank" class="button-link">
+                    <span>Idranti</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="section-container">
+            <h2 class="section-title">Siti Esterni</h2>
+            <div class="button-grid">
+                <a href="https://centrofunzionale.regione.basilicata.it/it/" target="_blank" class="button-link">
+                    <span>Sito CFD</span>
+                </a>
+                <a href="https://protezionecivile.regione.basilicata.it/protcivbas/home.jsp" target="_blank" class="button-link">
+                    <span>Sito Protezione Civile Basilicata</span>
+                </a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
