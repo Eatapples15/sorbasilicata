@@ -23,8 +23,9 @@
         import React, { useState, useEffect } from 'https://esm.sh/react@18.2.0';
         import ReactDOM from 'https://esm.sh/react-dom@18.2.0/client';
 
-        // !!! SOSTITUISCI QUESTO URL CON QUELLO CHE OTTIENI DAL DEPLOYMENT DI GOOGLE APPS SCRIPT !!!
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLjP7bnM926-WPpJ8_WzL_aWSLTLPjh0BRH-hgd7P7lZSnH6_uoGy3-pR56qqtoRuf1-CrUg25rs4MmgyughVCLD2umTsvohyjLVCAs_njZ-b0Awi9K75znhkJIOXICgltbIotxAE16zMMXluCjcpMgLWpGXBSs3kJLuzs5rtzv5BTgTXSSV8eVEeQd-qkdj0mQhL03Wh44Zgj6AtPwG0c1jF2sfdOZc9pnI5CZtLGl-fu0SqG5Gq_-Wl04sNFBN-Aj9ZvUrruumIxleQgjoqDTpJ6L28Q&lib=MDmCjhNDuDpAsrZ3VwstTbiIH6OImGALS'; 
+        // L'URL del deployment di Google Apps Script fornito dall'utente.
+        // Assicurati che il tuo script sia deployato come "Web app" con accesso "Anyone" (Chiunque).
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz2GK3-dVZWEq4I6X4W8CII4-SzA2qJkMyC4lCIn4oFu-2hpVXIjsu6bt-J2hvnuR8S/exec'; 
 
         /**
          * Calcola la distanza tra due punti geografici (latitudine, longitudine) in chilometri
@@ -67,11 +68,15 @@
                     try {
                         const response = await fetch(GOOGLE_APPS_SCRIPT_URL);
                         if (!response.ok) {
-                            throw new Error(`Errore HTTP! Stato: ${response.status}. Assicurati che l'URL di Apps Script sia corretto e deployato per l'accesso 'Anyone'.`);
+                            // Se la risposta non è OK, prova a leggere il testo per debug
+                            const errorText = await response.text();
+                            throw new Error(`Errore HTTP! Stato: ${response.status}. Risposta del server: ${errorText}. Assicurati che l'URL di Apps Script sia corretto e deployato per l'accesso 'Anyone'.`);
                         }
                         const data = await response.json();
                         
                         // Mappa i dati per assicurarti che lat/lng siano numeri e i nomi delle colonne corrispondano al tuo Foglio Google
+                        // Assicurati che 'ID', 'Nome Risorsa', 'Tipo Risorsa', 'Indirizzo Completo', 'Latitudine', 'Longitudine', 'Contatti'
+                        // corrispondano esattamente alle intestazioni del tuo Foglio Google.
                         const parsedData = data.map(res => ({
                             id: res.ID, 
                             name: res['Nome Risorsa'], 
@@ -91,9 +96,9 @@
                     }
                 };
 
-                // Verifica che l'URL di Apps Script sia stato impostato
-                if (GOOGLE_APPS_SCRIPT_URL === 'https://script.google.com/macros/s/IL_TUO_ID_DEPLOYMENT/exec') {
-                    setMessage('Attenzione: Devi sostituire GOOGLE_APPS_SCRIPT_URL nel codice con il tuo URL di Google Apps Script.');
+                // Controlliamo l'URL se è ancora il placeholder, altrimenti fetchiamo
+                if (GOOGLE_APPS_SCRIPT_URL.includes('IL_TUO_ID_DEPLOYMENT')) { // Un controllo più robusto del placeholder
+                    setMessage('Attenzione: Devi sostituire GOOGLE_APPS_SCRIPT_URL nel codice con il tuo URL di Google Apps Script. L\'URL attuale è un placeholder.');
                     setIsLoading(false);
                 } else {
                     fetchResources();
@@ -108,6 +113,14 @@
                     setMessage('Caricamento risorse in corso, riprova tra un attimo.');
                     return;
                 }
+                
+                // Mostra un messaggio se non ci sono risorse caricate
+                if (allResources.length === 0) {
+                     setMessage('Nessuna risorsa disponibile per la ricerca. Verifica il caricamento dal database.');
+                     setFilteredResources([]);
+                     return;
+                }
+
 
                 const lat = parseFloat(eventLat);
                 const lng = parseFloat(eventLng);
@@ -129,13 +142,13 @@
                 const results = allResources.map(resource => {
                     const dist = calculateDistance(lat, lng, resource.lat, resource.lng);
                     return { ...resource, distance: dist }; // Aggiunge la distanza all'oggetto risorsa
-                }).filter(resource => resource.distance <= radius)
+                }).filter(resource => !isNaN(resource.lat) && !isNaN(resource.lng) && resource.distance <= radius) // Filtra anche le risorse con coordinate non valide
                   .sort((a, b) => a.distance - b.distance); // Ordina per distanza crescente
 
                 setFilteredResources(results);
 
                 if (results.length === 0) {
-                    setMessage('Nessuna risorsa trovata nel raggio specificato.');
+                    setMessage('Nessuna risorsa trovata nel raggio specificato. Controlla le coordinate inserite e il raggio di ricerca.');
                 }
             };
 
@@ -256,3 +269,4 @@
     </script>
 </body>
 </html>
+
