@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Sala Operativa</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-100 to-indigo-200 flex items-center justify-center min-h-screen p-4 sm:p-6">
+    <div id="root" class="w-full"></div>
+
+    <script type="module">
+        import React, { useState, useEffect } from 'https://esm.sh/react@18.2.0';
+        import ReactDOM from 'https://esm.sh/react-dom@18.2.0/client';
+
+        // !!! SOSTITUISCI QUESTO URL CON QUELLO CHE OTTIENI DAL DEPLOYMENT DI GOOGLE APPS SCRIPT !!!
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLjP7bnM926-WPpJ8_WzL_aWSLTLPjh0BRH-hgd7P7lZSnH6_uoGy3-pR56qqtoRuf1-CrUg25rs4MmgyughVCLD2umTsvohyjLVCAs_njZ-b0Awi9K75znhkJIOXICgltbIotxAE16zMMXluCjcpMgLWpGXBSs3kJLuzs5rtzv5BTgTXSSV8eVEeQd-qkdj0mQhL03Wh44Zgj6AtPwG0c1jF2sfdOZc9pnI5CZtLGl-fu0SqG5Gq_-Wl04sNFBN-Aj9ZvUrruumIxleQgjoqDTpJ6L28Q&lib=MDmCjhNDuDpAsrZ3VwstTbiIH6OImGALS'; 
+
+        /**
+         * Calcola la distanza tra due punti geografici (latitudine, longitudine) in chilometri
+         * utilizzando la formula di Haversine.
+         * @param {number} lat1 - Latitudine del primo punto.
+         * @param {number} lon1 - Longitudine del primo punto.
+         * @param {number} lat2 - Latitudine del secondo punto.
+         * @param {number} lon2 - Longitudine del secondo punto.
+         * @returns {number} La distanza in chilometri.
+         */
+        const calculateDistance = (lat1, lon1, lat2, lon2) => {
+            const R = 6371; // Raggio della Terra in chilometri
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distance = R * c; // Distanza in km
+            return distance;
+        };
+
+        function App() {
+            // Stato per i dettagli dell'evento
+            const [eventName, setEventName] = useState('');
+            const [eventLat, setEventLat] = useState('41.890200'); // Esempio: Latitudine per Piazza Venezia, Roma
+            const [eventLng, setEventLng] = useState('12.482200'); // Esempio: Longitudine per Piazza Venezia, Roma
+            const [searchRadius, setSearchRadius] = useState('5'); // Raggio predefinito di 5 km
+
+            // Stato per le risorse caricate e filtrate
+            const [allResources, setAllResources] = useState([]);
+            const [filteredResources, setFilteredResources] = useState([]);
+            const [message, setMessage] = useState(''); // Per messaggi di errore o "nessun risultato"
+            const [isLoading, setIsLoading] = useState(true); // Stato di caricamento dei dati
+
+            // Carica le risorse dal Foglio Google tramite Apps Script all'avvio dell'app
+            useEffect(() => {
+                const fetchResources = async () => {
+                    try {
+                        const response = await fetch(GOOGLE_APPS_SCRIPT_URL);
+                        if (!response.ok) {
+                            throw new Error(`Errore HTTP! Stato: ${response.status}. Assicurati che l'URL di Apps Script sia corretto e deployato per l'accesso 'Anyone'.`);
+                        }
+                        const data = await response.json();
+                        
+                        // Mappa i dati per assicurarti che lat/lng siano numeri e i nomi delle colonne corrispondano al tuo Foglio Google
+                        const parsedData = data.map(res => ({
+                            id: res.ID, 
+                            name: res['Nome Risorsa'], 
+                            type: res['Tipo Risorsa'],
+                            address: res['Indirizzo Completo'],
+                            lat: parseFloat(res.Latitudine), // Converti in numero
+                            lng: parseFloat(res.Longitudine), // Converti in numero
+                            contact: res.Contatti
+                        }));
+                        setAllResources(parsedData);
+                        setMessage(''); 
+                    } catch (error) {
+                        console.error("Errore nel caricamento delle risorse:", error);
+                        setMessage(`Errore nel caricamento delle risorse dal database: ${error.message}. Controlla la console del browser per i dettagli.`);
+                    } finally {
+                        setIsLoading(false);
+                    }
+                };
+
+                // Verifica che l'URL di Apps Script sia stato impostato
+                if (GOOGLE_APPS_SCRIPT_URL === 'https://script.google.com/macros/s/IL_TUO_ID_DEPLOYMENT/exec') {
+                    setMessage('Attenzione: Devi sostituire GOOGLE_APPS_SCRIPT_URL nel codice con il tuo URL di Google Apps Script.');
+                    setIsLoading(false);
+                } else {
+                    fetchResources();
+                }
+            }, []); // Esegui solo una volta al mount iniziale del componente
+
+            // Funzione per gestire la ricerca delle risorse
+            const handleSearch = () => {
+                setMessage(''); 
+
+                if (isLoading) {
+                    setMessage('Caricamento risorse in corso, riprova tra un attimo.');
+                    return;
+                }
+
+                const lat = parseFloat(eventLat);
+                const lng = parseFloat(eventLng);
+                const radius = parseFloat(searchRadius);
+
+                // Validazione degli input
+                if (isNaN(lat) || isNaN(lng)) {
+                    setMessage('Per favore, inserisci coordinate valide (numeri) per la località dell\'evento.');
+                    setFilteredResources([]);
+                    return;
+                }
+                if (isNaN(radius) || radius <= 0) {
+                    setMessage('Per favore, inserisci un raggio di ricerca valido (un numero positivo).');
+                    setFilteredResources([]);
+                    return;
+                }
+
+                // Calcola la distanza per ogni risorsa e filtra
+                const results = allResources.map(resource => {
+                    const dist = calculateDistance(lat, lng, resource.lat, resource.lng);
+                    return { ...resource, distance: dist }; // Aggiunge la distanza all'oggetto risorsa
+                }).filter(resource => resource.distance <= radius)
+                  .sort((a, b) => a.distance - b.distance); // Ordina per distanza crescente
+
+                setFilteredResources(results);
+
+                if (results.length === 0) {
+                    setMessage('Nessuna risorsa trovata nel raggio specificato.');
+                }
+            };
+
+            // Esegui la ricerca ogni volta che le risorse vengono caricate o gli input predefiniti cambiano
+            useEffect(() => {
+                // Esegui la ricerca solo se non sta caricando e ci sono risorse caricate
+                if (!isLoading && allResources.length > 0) {
+                    handleSearch();
+                }
+            }, [isLoading, allResources, eventLat, eventLng, searchRadius]); // Dipendenze per rieseguire la ricerca
+
+            return (
+                <div className="w-full max-w-lg flex flex-col items-center justify-center">
+                    <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg w-full mb-8 border border-gray-200">
+                        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Gestione Sala Operativa</h1>
+
+                        <div className="space-y-4">
+                            {/* Campo Nome Evento */}
+                            <div>
+                                <label htmlFor="eventName" className="block text-sm font-medium text-gray-700 mb-1">Nome Evento:</label>
+                                <input
+                                    type="text"
+                                    id="eventName"
+                                    className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+                                    value={eventName}
+                                    onChange={(e) => setEventName(e.target.value)}
+                                    placeholder="Es: Incidente A1 km 20"
+                                />
+                            </div>
+                            {/* Campi Latitudine e Longitudine Evento */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label htmlFor="eventLat" className="block text-sm font-medium text-gray-700 mb-1">Latitudine Evento:</label>
+                                    <input
+                                        type="number"
+                                        id="eventLat"
+                                        className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+                                        value={eventLat}
+                                        onChange={(e) => setEventLat(e.target.value)}
+                                        placeholder="Es: 41.902782"
+                                        step="any"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="eventLng" className="block text-sm font-medium text-gray-700 mb-1">Longitudine Evento:</label>
+                                    <input
+                                        type="number"
+                                        id="eventLng"
+                                        className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+                                        value={eventLng}
+                                        onChange={(e) => setEventLng(e.target.value)}
+                                        placeholder="Es: 12.496366"
+                                        step="any"
+                                    />
+                                </div>
+                            </div>
+                            {/* Campo Raggio di Ricerca */}
+                            <div>
+                                <label htmlFor="searchRadius" className="block text-sm font-medium text-gray-700 mb-1">Raggio di Ricerca (km):</label>
+                                <input
+                                    type="number"
+                                    id="searchRadius"
+                                    className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+                                    value={searchRadius}
+                                    onChange={(e) => setSearchRadius(e.target.value)}
+                                    placeholder="Es: 10"
+                                    min="1"
+                                />
+                            </div>
+                            {/* Pulsante di ricerca */}
+                            <button
+                                onClick={handleSearch}
+                                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-300 ease-in-out transform hover:scale-105"
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Caricamento risorse...' : 'Cerca Risorse'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Area per messaggi (errori, nessun risultato) */}
+                    {message && (
+                        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg w-full mb-8" role="alert">
+                            <p className="font-bold">Attenzione:</p>
+                            <p>{message}</p>
+                        </div>
+                    )}
+
+                    {/* Sezione Risultati Risorse */}
+                    <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg w-full">
+                        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Risorse Trovate</h2>
+                        {isLoading ? (
+                            <p className="text-center text-gray-600">Caricamento delle risorse...</p>
+                        ) : filteredResources.length === 0 && !message ? (
+                            <p className="text-center text-gray-600">Nessuna risorsa trovata o dettagli evento non inseriti. Inserisci i dettagli dell'evento e clicca "Cerca Risorse" per visualizzare le risorse.</p>
+                        ) : (
+                            <div className="space-y-4">
+                                {filteredResources.map(resource => (
+                                    <div key={resource.id} className="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200">
+                                        <h3 className="text-lg font-semibold text-gray-800 mb-1">{resource.name}</h3>
+                                        <p className="text-sm text-gray-600 mb-1">Tipo: <span className="font-medium text-gray-700">{resource.type}</span></p>
+                                        <p className="text-sm text-gray-600 mb-1">Indirizzo: <span className="font-medium text-gray-700">{resource.address}</span></p>
+                                        <p className="text-sm text-gray-600 mb-1">Contatti: <span className="font-medium text-gray-700">{resource.contact}</span></p>
+                                        <p className="text-sm text-gray-600">Distanza: <span className="font-bold text-blue-600">{resource.distance.toFixed(2)} km</span></p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Monta l'applicazione React nel div con id="root"
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<App />);
+    </script>
+</body>
+</html>
